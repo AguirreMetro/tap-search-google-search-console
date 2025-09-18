@@ -1,0 +1,203 @@
+<apex:page id="TapSearchResults"
+           applyHtmlTag="false"
+           applyBodyTag="false"
+           cache="false"
+           docType="HTML-5.0"
+           showChat="false"
+           showHeader="false"
+           standardStylesheets="false"
+           >
+    <apex:composition template="TAPWrapper">
+        <apex:define name="title_text">TAP Search Results</apex:define>
+
+        <apex:define name="scripts"><!-- Limits 3 page search on mobile -->
+            <script>
+                // Function to dynamically parse hash parameters
+                function getHashParams() {
+                    var hash = window.location.hash.substring(1); // Get the current hash value
+                    var hashParams = {};
+                    var regex = /([^&;=]+)=?([^&;]*)/g;
+                    var match;
+            
+                    // Decode each parameter in the hash and add it to the hashParams object
+                    while (match = regex.exec(hash)) {
+                        hashParams[decodeURIComponent(match[1])] = decodeURIComponent(match[2]);
+                    }
+            
+                    return hashParams;
+                }
+            
+                // Function to apply styles
+                function applyStyles() {
+                    setTimeout(function() {
+                    var element = document.querySelector('.gsc-cursor-container-next');
+                    if (element) {
+                        element.style.opacity = '0';
+                        element.style.pointerEvents = 'none';
+                    }
+                }, 500); // Adjust the delay as needed
+            }
+            
+             // Function to handle logic based on the hash
+             function handleHashChange() {
+                    var hashParams = getHashParams(); // Get the latest hash parameters
+            
+                    //console.log("Current hash parameters:", hashParams);
+            
+                    // Apply styles if gsc.page=3
+                    if (hashParams['gsc.page'] === '3') {
+                        applyStyles();
+                    }
+            
+                    // Additional logic for gsc.page=2, if needed
+                    if (hashParams['gsc.page'] === '2') {
+                        // Logic for when gsc.page=2
+                    }
+                }
+            
+                // Function to handle clicks on delegated elements
+                function delegatedClickHandler(event) {
+                //console.log("Clicked element:", event.target); // Debugging
+            
+                if (event.target.matches('.gsc-cursor-container-next, .gsc-cursor-container-next *, .gsc-cursor-container-previous, .gsc-cursor-container-previous *')) {
+                    //console.log("Correct element clicked"); // Debugging
+                    handleHashChange();
+                }
+            }
+            
+                // Set up event delegation for clicks on .gsc-cursor-container-next and .gsc-cursor-container-previous
+                function setupEventDelegation() {
+                document.body.addEventListener('click', delegatedClickHandler);
+                //console.log("Event delegation set up"); // Debugging
+            }
+            
+                // Listen for hash change events
+                window.addEventListener('hashchange', handleHashChange, false);
+            
+                // Check the hash on initial page load and set up event delegation
+                window.onload = function() {
+                    // Delay the initialization of the hash change listener and event delegation
+                    setTimeout(function() {
+                        handleHashChange();
+                        setupEventDelegation();
+                    }, 1000);
+                };
+            </script>
+        </apex:define>
+
+        <apex:define name="styles">
+            <style>
+                .search-form-input > div > form > table > tbody > tr > td.gsc-input {
+                    padding-right: 0 !important;
+                }
+                
+                .search-form-input > div > form > table > tbody > tr > .gsc-search-button > .gsc-search-button-v2 {
+                    margin-left: 0;
+                }
+                
+                .search-form-input > div > form > table > tbody > tr > td.gsc-input {
+                    padding-right: 0 !important;
+                }
+                
+                .gsc-input-box {
+                    padding: 0 !important;
+                        border-top-left-radius: 3px !important;
+                        border-bottom-left-radius: 3px !important;
+                }
+                
+                .gsc-search-box {
+                    max-width: 600px;
+                }
+                
+                .search-form-input > div > form > table > tbody > tr > .gsc-search-button > .gsc-search-button-v2 {
+                    margin-left: 0;
+                    padding: 10px;
+                    border-left: none;
+                    border-top-left-radius: 0;
+                    border-bottom-left-radius: 0;
+                    border-bottom-right-radius: 3px;
+                    border-top-right-radius: 3px;
+                }
+                
+                
+                
+                    .search-form-input > div > form > table > tbody > tr > .gsc-input .gsc-input-box > table > tbody > tr > td {
+                        padding: 2px 9px 2px 9px !important;
+                    }
+                    
+                .gcsc-more-maybe-branding-root,
+                .gcsc-find-more-on-google-root,
+                .gcsc-branding {
+                    display: none !important;
+                }
+                
+                .gsc-search-button-v2 svg {
+                    height: auto;
+                    width: 13px !important;
+                }
+                
+                .gsc-input-box > table > tbody > tr > td > input {
+                    background: #ffffff !important;
+                    padding: 3px !important
+                }
+                
+                .gssb_a img {
+                    display: none;
+                }
+
+                .gsc-cursor-page[aria-label="Page 4"],
+                .gsc-cursor-page[aria-label="Page 5"],
+                .gsc-cursor-page[aria-label="Page 6"],
+                .gsc-cursor-page[aria-label="Page 7"],
+                .gsc-cursor-page[aria-label="Page 8"],
+                .gsc-cursor-page[aria-label="Page 9"],
+                .gsc-cursor-page[aria-label="Page 10"] {
+                    display: none !important;
+                }
+                
+                .gs-webResult div.gs-visibleUrl-breadcrumb > span:first-child {
+                    display: none;
+                }
+                
+                table.gsc-above-wrapper-area-container {
+                    display: none;
+                }
+                
+                .gsc-url-top {
+                    display: none !important;
+                }
+                
+                .gsc-webResult.gsc-result {
+                    padding: 15px 0;
+                 }
+                
+            </style>
+        </apex:define>
+        <apex:define name="body">
+        <apex:form >
+            <div class="page-wrapper">
+                <div id="viewport" class="container">
+                    <div class="row" style="margin-bottom: 0;">
+
+                        <div class="col-xs-12 col-sm-12">
+
+                            <div class="gsc-results-wrap search-results-page">
+                                 <h1>Search Results</h1>
+                                 <script async="true" src="https://cse.google.com/cse.js?cx=10ca34c4261d749f0"></script>
+                                   <div class="search-form-input">
+                                       <div class="gcse-searchbox"></div>
+                                   </div>
+                                   
+                                <div class="gcse-searchresults"></div>
+
+                            </div>
+                            
+                        </div>
+                        
+                    </div>
+                </div> <!-- /.container -->
+            </div>
+            </apex:form>
+        </apex:define>
+    </apex:composition>
+</apex:page>
