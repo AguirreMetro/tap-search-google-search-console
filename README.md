@@ -35,15 +35,16 @@ This document describes the current behavior of the **site search implementation
   - URL fragments (`#…`) are ignored by GA4’s built-in site search feature.
 
 ---
+
+# Issue: GA4 can not properly track the search on the second search since the parameter 'q' reamins the same.
+
+# Solution: The new search results should change the 'q' notthe hash.
+
 Example:
 1. User searches on the snippet search entry field that is located on the navigation menu on any page, example search "parking"
 2. The user is redirected to the TapSearchResults page with URL https://www.taptogo.net/TapSearchResults?q=parking#gsc.tab=0&gsc.q=parking&gsc.page=1
 3. The users is presented with a new search bar on this page and continues searching, example search "balance"
 4. The user remains on the page but TapSearchResults page reloads new search results with URL https://www.taptogo.net/TapSearchResults?q=parking#gsc.tab=0&gsc.q=balance&gsc.sort=
-
-Issue: GA4 can not properly track the search on the second search since the parameter 'q' reamins the same.
-Solution: The new search results should change the 'q' notthe hash.
-
 ---
 
 ## 3. Impact on Analytics
