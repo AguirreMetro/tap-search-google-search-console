@@ -40,7 +40,7 @@ This document describes the current behavior of the **site search implementation
 - GA4 can not properly track the search on the second search since the parameter 'q' reamins the same.
 
 # Solution: 
-- The new search results should change the 'q' notthe hash.
+- The new search results should change the 'q' not the hash.
 
 Example:
 1. User searches on the snippet search entry field that is located on the navigation menu on any page, example search "parking"
