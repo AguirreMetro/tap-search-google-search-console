@@ -1,0 +1,8 @@
+                          <div class="search-box-gsc-wrap header-search">
+                            <form action="/TapSearchResults" id="searchForm" method="get">
+                                <input class="search-field search-input-box" id="search" name="q" size="25" type="text" placeholder="Search..."/>
+                                <div class="search-icon-container">
+                                    <input class="search-icon icon-button" id="searchIcon" type="submit" value=" "/>
+                                </div>
+                            </form> 
+                          </div>
