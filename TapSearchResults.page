@@ -12,76 +12,248 @@
 
         <apex:define name="scripts"><!-- Limits 3 page search on mobile -->
             <script>
-                // Function to dynamically parse hash parameters
+                var SEARCH_FORM_SELECTOR = 'form.gsc-search-box, form.gsc-search-box-tools';
+                var searchRedirectInitialized = false;
+                var searchFormObserver = null;
+                var searchFormIntervalId = null;
+
                 function getHashParams() {
-                    var hash = window.location.hash.substring(1); // Get the current hash value
+                    var hash = window.location.hash.substring(1);
                     var hashParams = {};
                     var regex = /([^&;=]+)=?([^&;]*)/g;
                     var match;
-            
-                    // Decode each parameter in the hash and add it to the hashParams object
-                    while (match = regex.exec(hash)) {
+
+                    while ((match = regex.exec(hash))) {
                         hashParams[decodeURIComponent(match[1])] = decodeURIComponent(match[2]);
                     }
-            
+
                     return hashParams;
                 }
-            
-                // Function to apply styles
+
                 function applyStyles() {
                     setTimeout(function() {
-                    var element = document.querySelector('.gsc-cursor-container-next');
-                    if (element) {
-                        element.style.opacity = '0';
-                        element.style.pointerEvents = 'none';
+                        var element = document.querySelector('.gsc-cursor-container-next');
+
+                        if (element) {
+                            element.style.opacity = '0';
+                            element.style.pointerEvents = 'none';
+                        }
+                    }, 500);
+                }
+
+                function normalizeSearchTerm(term) {
+                    if (typeof term !== 'string') {
+                        return '';
                     }
-                }, 500); // Adjust the delay as needed
-            }
-            
-             // Function to handle logic based on the hash
-             function handleHashChange() {
-                    var hashParams = getHashParams(); // Get the latest hash parameters
-            
-                    //console.log("Current hash parameters:", hashParams);
-            
-                    // Apply styles if gsc.page=3
+
+                    return term.replace(/^\s+|\s+$/g, '');
+                }
+
+                function getQueryParameterValue(paramName) {
+                    var query = window.location.search;
+
+                    if (!query) {
+                        return null;
+                    }
+
+                    var queryWithoutQuestionMark = query.charAt(0) === '?' ? query.substring(1) : query;
+
+                    if (!queryWithoutQuestionMark) {
+                        return null;
+                    }
+
+                    var params = queryWithoutQuestionMark.split('&');
+                    var targetName = paramName.toLowerCase();
+
+                    for (var i = 0; i < params.length; i++) {
+                        var param = params[i];
+
+                        if (!param) {
+                            continue;
+                        }
+
+                        var separatorIndex = param.indexOf('=');
+                        var rawName = separatorIndex > -1 ? param.slice(0, separatorIndex) : param;
+
+                        if (rawName.toLowerCase() !== targetName) {
+                            continue;
+                        }
+
+                        var rawValue = separatorIndex > -1 ? param.slice(separatorIndex + 1) : '';
+                        rawValue = rawValue.replace(/\+/g, ' ');
+
+                        try {
+                            return decodeURIComponent(rawValue);
+                        } catch (error) {
+                            return rawValue;
+                        }
+                    }
+
+                    return null;
+                }
+
+                function buildUrlWithUpdatedQuery(searchTerm) {
+                    var sanitizedTerm = normalizeSearchTerm(searchTerm);
+
+                    if (!sanitizedTerm) {
+                        return null;
+                    }
+
+                    var existingValue = getQueryParameterValue('q');
+                    var normalizedExistingValue = normalizeSearchTerm(existingValue);
+
+                    if (existingValue !== null && normalizedExistingValue === sanitizedTerm) {
+                        return null;
+                    }
+
+                    var query = window.location.search ? window.location.search.substring(1) : '';
+                    var params = query ? query.split('&') : [];
+                    var foundTarget = false;
+                    var newParams = [];
+
+                    for (var i = 0; i < params.length; i++) {
+                        var param = params[i];
+
+                        if (!param) {
+                            continue;
+                        }
+
+                        var separatorIndex = param.indexOf('=');
+                        var rawName = separatorIndex > -1 ? param.slice(0, separatorIndex) : param;
+
+                        if (rawName.toLowerCase() === 'q') {
+                            if (!foundTarget) {
+                                newParams.push('q=' + encodeURIComponent(sanitizedTerm));
+                                foundTarget = true;
+                            }
+                        } else {
+                            newParams.push(param);
+                        }
+                    }
+
+                    if (!foundTarget) {
+                        newParams.push('q=' + encodeURIComponent(sanitizedTerm));
+                    }
+
+                    var baseUrl = window.location.protocol + '//' + window.location.host + window.location.pathname;
+                    var newQueryString = newParams.join('&');
+
+                    return newQueryString ? baseUrl + '?' + newQueryString : baseUrl;
+                }
+
+                function redirectToSearchTerm(searchTerm) {
+                    var updatedUrl = buildUrlWithUpdatedQuery(searchTerm);
+
+                    if (!updatedUrl) {
+                        return false;
+                    }
+
+                    window.location.href = updatedUrl;
+                    return true;
+                }
+
+                function syncQueryParamWithHash(hashParams) {
+                    if (!hashParams) {
+                        return;
+                    }
+
+                    var hashSearchTerm = hashParams['gsc.q'];
+                    var normalizedTerm = normalizeSearchTerm(hashSearchTerm);
+
+                    if (!normalizedTerm) {
+                        return;
+                    }
+
+                    redirectToSearchTerm(normalizedTerm);
+                }
+
+                function attachSearchHandlerToForms() {
+                    var forms = document.querySelectorAll(SEARCH_FORM_SELECTOR);
+
+                    for (var i = 0; i < forms.length; i++) {
+                        var form = forms[i];
+
+                        if (form.getAttribute('data-q-redirect-bound') === 'true') {
+                            continue;
+                        }
+
+                        form.setAttribute('data-q-redirect-bound', 'true');
+
+                        form.addEventListener('submit', function(event) {
+                            var input = event.currentTarget.querySelector('input.gsc-input');
+                            var rawTerm = input && typeof input.value === 'string' ? input.value : '';
+                            var normalizedTerm = normalizeSearchTerm(rawTerm);
+
+                            if (!normalizedTerm) {
+                                return;
+                            }
+
+                            var redirected = redirectToSearchTerm(normalizedTerm);
+
+                            if (redirected) {
+                                event.preventDefault();
+                            }
+                        });
+                    }
+                }
+
+                function initializeSearchRedirect() {
+                    if (searchRedirectInitialized) {
+                        return;
+                    }
+
+                    searchRedirectInitialized = true;
+                    attachSearchHandlerToForms();
+
+                    if (typeof MutationObserver === 'function' && document.body) {
+                        searchFormObserver = new MutationObserver(function() {
+                            attachSearchHandlerToForms();
+                        });
+
+                        searchFormObserver.observe(document.body, { childList: true, subtree: true });
+                    } else if (!searchFormIntervalId) {
+                        searchFormIntervalId = window.setInterval(attachSearchHandlerToForms, 1000);
+                    }
+                }
+
+                function handleHashChange() {
+                    var hashParams = getHashParams();
+
                     if (hashParams['gsc.page'] === '3') {
                         applyStyles();
                     }
-            
-                    // Additional logic for gsc.page=2, if needed
+
                     if (hashParams['gsc.page'] === '2') {
-                        // Logic for when gsc.page=2
+                        // Placeholder for additional logic
+                    }
+
+                    syncQueryParamWithHash(hashParams);
+                }
+
+                function delegatedClickHandler(event) {
+                    if (event.target.matches('.gsc-cursor-container-next, .gsc-cursor-container-next *, .gsc-cursor-container-previous, .gsc-cursor-container-previous *')) {
+                        handleHashChange();
                     }
                 }
-            
-                // Function to handle clicks on delegated elements
-                function delegatedClickHandler(event) {
-                //console.log("Clicked element:", event.target); // Debugging
-            
-                if (event.target.matches('.gsc-cursor-container-next, .gsc-cursor-container-next *, .gsc-cursor-container-previous, .gsc-cursor-container-previous *')) {
-                    //console.log("Correct element clicked"); // Debugging
-                    handleHashChange();
-                }
-            }
-            
-                // Set up event delegation for clicks on .gsc-cursor-container-next and .gsc-cursor-container-previous
+
                 function setupEventDelegation() {
-                document.body.addEventListener('click', delegatedClickHandler);
-                //console.log("Event delegation set up"); // Debugging
-            }
-            
-                // Listen for hash change events
+                    document.body.addEventListener('click', delegatedClickHandler);
+                }
+
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', initializeSearchRedirect);
+                } else {
+                    initializeSearchRedirect();
+                }
+
                 window.addEventListener('hashchange', handleHashChange, false);
-            
-                // Check the hash on initial page load and set up event delegation
-                window.onload = function() {
-                    // Delay the initialization of the hash change listener and event delegation
+
+                window.addEventListener('load', function() {
                     setTimeout(function() {
                         handleHashChange();
                         setupEventDelegation();
                     }, 1000);
-                };
+                });
             </script>
         </apex:define>
 
